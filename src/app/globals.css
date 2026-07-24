@@ -1,26 +1,62 @@
 @import "tailwindcss";
 
+/*
+ * Dashboard siempre en tema claro — a propósito, no sigue prefers-color-scheme.
+ * Es una herramienta interna de administración, no un artefacto público; el
+ * pedido explícito fue "colores claros y limpios en todo el dashboard",
+ * consistente en todas las páginas, así que no hay modo oscuro que alternar.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f7f9fc;
+  --foreground: #0b0b0b;
+  /* Acento único de "seleccionado/interactivo" (nav activo, focus rings,
+   * bordes de input): azul cielo claro, deliberadamente distinto del verde
+   * de marca de Healzyp (#487D26) y de STATUS_COLORS.good (#0ca30c) — ese
+   * verde ya significa "bien/positivo" en este dashboard, así que nunca es
+   * el color que por sí solo marca "esto está seleccionado".
+   *
+   * --accent-mint SOLO aparece emparejado con --accent en gradientes
+   * decorativos (número principal de una métrica, botón primario) para dar
+   * el punto "tech" pedido — nunca solo, nunca como indicador de estado o
+   * de selección, así que no choca con el criterio anterior.
+   */
+  --accent: #3b82f6;
+  --accent-soft: #eaf2fe;
+  --accent-mint: #34d399;
+  --gradient-accent: linear-gradient(135deg, var(--accent) 0%, var(--accent-mint) 100%);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-mint: var(--accent-mint);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Tarjeta estándar del dashboard: blanco puro + sombra sutil + borde de 1px
+ * muy tenue (en vez de un fondo plano de color) para que las tarjetas
+ * destaquen sobre el fondo casi blanco sin recurrir a bloques de color. */
+.card {
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 1rem;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+/* Gradiente decorativo compartido — número principal de una métrica (texto,
+ * vía bg-clip-text) o botón primario (fondo). Ver nota sobre --accent-mint
+ * arriba: solo se usa en pareja con --accent, nunca solo. */
+.bg-gradient-accent {
+  background-image: var(--gradient-accent);
 }
