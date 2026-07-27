@@ -1,11 +1,13 @@
 import { createBrowserClient } from '@supabase/ssr'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Cliente de navegador — SOLO anon key.
-// Este proyecto es de solo lectura contra la Supabase de producción de Healzyp:
-// nunca debe importarse aquí una service_role key. Si una consulta necesita
-// más acceso del que da RLS, la solución es ajustar las políticas RLS en
-// Supabase (ver database/dashboard-rls.sql), no añadir la clave maestra.
+// Cliente de navegador — SOLO anon key, contra la Supabase DEDICADA a este
+// dashboard SaaS (proyecto separado del de cada tienda — ver
+// database/saas-schema.sql). Nunca debe importarse aquí una service_role
+// key: escrituras como ProductActiveToggle o ConnectStoreForm dependen de
+// que RLS decida qué puede tocar cada cliente, no de bypasearlo desde aquí.
+// Si una consulta necesita más acceso del que da RLS, la solución es ajustar
+// las políticas en Supabase, no añadir la clave maestra a este proyecto.
 //
 // La validación de las variables de entorno vive DENTRO de la función (no a
 // nivel de módulo): así solo se dispara cuando de verdad se crea un cliente,
@@ -19,7 +21,7 @@ export function createClient() {
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error(
       'Faltan variables de entorno de Supabase: NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY. ' +
-        'Copia .env.local.example como .env.local y rellena los valores (misma Supabase que healzyp.com, solo anon key).'
+        'Copia .env.local.example como .env.local y rellena los valores del proyecto Supabase del dashboard SaaS.'
     )
   }
 

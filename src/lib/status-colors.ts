@@ -40,3 +40,17 @@ const ORDER_STATUS: Record<string, { label: string; tone: StatusTone }> = {
 export function orderStatusInfo(estado: string) {
   return ORDER_STATUS[estado] ?? { label: estado, tone: 'neutral' as StatusTone }
 }
+
+// clients.estado_suscripcion (client_subscription_status_enum en
+// database/saas-schema.sql). 'activa' y 'prueba' dan acceso al dashboard
+// (ver dashboard/layout.tsx); 'cancelada' y 'pago_fallido' lo bloquean.
+const SUBSCRIPTION_STATUS: Record<string, { label: string; tone: StatusTone }> = {
+  activa: { label: 'Activa', tone: 'good' },
+  prueba: { label: 'Periodo de prueba', tone: 'warning' },
+  cancelada: { label: 'Cancelada', tone: 'critical' },
+  pago_fallido: { label: 'Pago fallido', tone: 'critical' },
+}
+
+export function subscriptionStatusInfo(estado: string) {
+  return SUBSCRIPTION_STATUS[estado] ?? { label: estado, tone: 'neutral' as StatusTone }
+}

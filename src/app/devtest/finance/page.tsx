@@ -4,9 +4,9 @@ import { Suspense } from 'react'
 import { CheckCircle2 } from 'lucide-react'
 import { DevtestShell } from '@/components/DevtestShell'
 import { FinancePeriodSelector } from '@/components/FinancePeriodSelector'
-import { RevenueExpenseChart } from '@/components/RevenueExpenseChart'
 import { FinanceMetricCards } from '@/components/FinanceMetricCards'
-import { NewExpenseForm } from '@/components/NewExpenseForm'
+import { ExpenseDrawerProvider } from '@/components/ExpenseDrawer'
+import { AddExpenseButton } from '@/components/AddExpenseButton'
 import { ExpensesEmptyState } from '@/components/ExpensesEmptyState'
 import { Reveal } from '@/components/Reveal'
 import { STATUS_COLORS } from '@/lib/status-colors'
@@ -39,67 +39,60 @@ const ingresosDelta = percentDelta(current.ingresos, previous.ingresos)
 const gastosDelta = percentDelta(current.gastos, previous.gastos)
 const beneficioDelta = percentDelta(beneficioMes, beneficioAnterior)
 
-const ingresosSpark = MOCK_BUCKETS.slice(-8).map((b) => b.ingresos)
-const gastosSpark = MOCK_BUCKETS.slice(-8).map((b) => b.gastos)
+const beneficioSpark = MOCK_BUCKETS.map((b) => b.ingresos - b.gastos)
 
 export default function DevTestFinancePage() {
   return (
     <DevtestShell currentPath="/dashboard/finance">
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold tracking-tight text-slate-900">Estado financiero</h2>
-            <p className="text-sm text-slate-500">Ingresos de pedidos pagados menos gastos manuales</p>
-          </div>
-          <Suspense fallback={null}>
-            <FinancePeriodSelector />
-          </Suspense>
-        </div>
-
-        <FinanceMetricCards
-          ingresosMes={current.ingresos}
-          gastosMes={current.gastos}
-          beneficioMes={beneficioMes}
-          ingresosDelta={ingresosDelta}
-          gastosDelta={gastosDelta}
-          beneficioDelta={beneficioDelta}
-          ingresosSpark={ingresosSpark}
-          gastosSpark={gastosSpark}
-        />
-
-        <Reveal delay={0.1} className="card p-4">
-          <RevenueExpenseChart buckets={MOCK_BUCKETS} />
-        </Reveal>
-
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[320px_1fr]">
-          <Reveal delay={0.15} className="card p-4">
-            <h3 className="text-sm font-semibold text-slate-900">Añadir gasto</h3>
-            <div className="mt-3">
-              <NewExpenseForm />
+      <ExpenseDrawerProvider storeId="devtest-store-id">
+        <div className="space-y-8">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900">Estado financiero</h2>
+              <p className="text-sm text-slate-500">Ingresos de pedidos pagados menos gastos manuales</p>
             </div>
-          </Reveal>
+            <div className="flex items-center gap-3">
+              <Suspense fallback={null}>
+                <FinancePeriodSelector />
+              </Suspense>
+              <AddExpenseButton />
+            </div>
+          </div>
 
-          <Reveal delay={0.2} className="card overflow-hidden">
+          <FinanceMetricCards
+            ingresosMes={current.ingresos}
+            gastosMes={current.gastos}
+            beneficioMes={beneficioMes}
+            ingresosDelta={ingresosDelta}
+            gastosDelta={gastosDelta}
+            beneficioDelta={beneficioDelta}
+            beneficioSpark={beneficioSpark}
+          />
+
+          <Reveal delay={0.15} className="card overflow-hidden">
+            <div className="border-b border-slate-100 px-5 py-4">
+              <h3 className="text-sm font-semibold text-slate-900">Gastos recientes</h3>
+            </div>
             <ExpensesEmptyState />
           </Reveal>
-        </div>
 
-        {/* No es interactivo: solo una vista estática del banner que
-            NewExpenseForm muestra tras un guardado real (no se puede probar
-            el guardado real aquí, sin sesión admin la escritura la bloquea RLS). */}
-        <div className="card max-w-sm p-4">
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">
-            Vista previa: confirmación tras guardar
-          </p>
-          <p
-            className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium"
-            style={{ color: STATUS_COLORS.good, backgroundColor: '#e7f6e7' }}
-          >
-            <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} />
-            Gasto añadido correctamente.
-          </p>
+          {/* No es interactivo: solo una vista estática del banner que
+              NewExpenseForm muestra tras un guardado real (no se puede probar
+              el guardado real aquí, sin sesión admin la escritura la bloquea RLS). */}
+          <div className="card max-w-sm p-4">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">
+              Vista previa: confirmación tras guardar
+            </p>
+            <p
+              className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium"
+              style={{ color: STATUS_COLORS.good, backgroundColor: '#e7f6e7' }}
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} />
+              Gasto añadido correctamente.
+            </p>
+          </div>
         </div>
-      </div>
+      </ExpenseDrawerProvider>
     </DevtestShell>
   )
 }

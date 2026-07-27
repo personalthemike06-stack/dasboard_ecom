@@ -3,9 +3,16 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 /**
  * Refresca la sesión de Supabase en cada request (patrón estándar de
- * @supabase/ssr) y protege /dashboard: sin sesión con app_metadata.role
- * === 'admin', redirige a /login. Solo anon key — igual que el resto del
- * proyecto.
+ * @supabase/ssr) y protege /dashboard: sin sesión, redirige a /login. Solo
+ * anon key — igual que el resto del proyecto.
+ *
+ * Ya NO comprueba app_metadata.role === 'admin' (eso era el modelo de un
+ * único admin de Healzyp). En el modelo SaaS multi-cliente, cualquier
+ * usuario autenticado puede pasar de aquí; que además esté vinculado a un
+ * cliente real (tabla client_users) lo comprueba getCurrentClient() en
+ * dashboard/layout.tsx — el middleware no puede permitírselo por coste (una
+ * consulta a Supabase en cada request de cada asset) y porque un check aquí
+ * nunca sustituye al de un Server Component, solo lo complementa.
  */
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -33,16 +40,16 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const isAdmin = user?.app_metadata?.role === 'admin'
+  const isAuthenticated = user != null
   const path = request.nextUrl.pathname
 
-  if (path.startsWith('/dashboard') && !isAdmin) {
+  if (path.startsWith('/dashboard') && !isAuthenticated) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
-  if (path === '/login' && isAdmin) {
+  if (path === '/login' && isAuthenticated) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)

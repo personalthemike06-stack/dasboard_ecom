@@ -1,4 +1,4 @@
-import { Skeleton, SkeletonCard, SkeletonTable } from '@/components/Skeleton'
+import { Skeleton, SkeletonCard } from '@/components/Skeleton'
 
 export default function DashboardLoading() {
   return (
@@ -9,7 +9,7 @@ export default function DashboardLoading() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <SkeletonCard className="max-w-md" />
+        <Skeleton className="h-[220px] w-full rounded-[18px]" />
         <SkeletonCard />
       </div>
 
@@ -21,13 +21,10 @@ export default function DashboardLoading() {
           </div>
           <Skeleton className="h-9 w-64" />
         </div>
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[240px_1fr]">
-          <SkeletonCard />
-          <div className="card p-4">
-            <Skeleton className="h-[240px] w-full" />
-          </div>
+        <div className="card p-6">
+          <Skeleton className="h-9 w-40" />
+          <Skeleton className="mt-6 h-32 w-full" />
         </div>
-        <SkeletonTable rows={5} cols={2} />
       </div>
     </div>
   )

@@ -1,89 +1,58 @@
-'use client'
-
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { DailyVisitors } from '@/lib/visitors'
-import { niceAxisScale } from '@/lib/chart-scale'
+import { buildVisitorChartBuckets } from '@/lib/visitors'
+import { AnimatedNumber } from '@/components/AnimatedNumber'
 
-const VISITORS_COLOR = '#3b82f6'
-const VISITORS_COLOR_SOFT = '#34d399'
-const GRID_COLOR = '#eef2f6'
-const AXIS_LINE_COLOR = '#e2e8f0'
-const MUTED_TEXT = '#94a3b8'
-const MIN_AXIS_MAX = 10
+const BAR_COLOR_MUTED = '#e2e8f0'
 
-function CustomTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean
-  payload?: { payload: DailyVisitors }[]
-}) {
-  if (!active || !payload?.length) return null
-  const day = payload[0].payload
+/**
+ * Barras tipo calendario: una barra por día (o por semana si el rango
+ * "Personalizado" es amplio, ver buildVisitorChartBuckets), altura
+ * proporcional al máximo visible. La última barra (día/semana más reciente)
+ * se resalta en el acento sólido, el resto en gris claro.
+ */
+export function VisitorsChart({ days, periodLabel }: { days: DailyVisitors[]; periodLabel: string }) {
+  const total = days.reduce((sum, d) => sum + d.visitors, 0)
+  const buckets = buildVisitorChartBuckets(days)
+  const maxVisitors = Math.max(1, ...buckets.map((b) => b.visitors))
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-lg shadow-slate-900/5">
-      <p className="font-semibold text-slate-900">{day.label}</p>
-      <p className="mt-1 flex items-center gap-1.5 text-slate-600">
-        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: VISITORS_COLOR }} aria-hidden />
-        Visitantes
-        <span className="ml-auto font-medium tabular-nums text-slate-900">{day.visitors}</span>
-      </p>
-    </div>
-  )
-}
+    <div>
+      <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">Visitantes</p>
+      <div className="mt-1 flex items-baseline gap-2">
+        <AnimatedNumber
+          value={total}
+          format="integer"
+          className="bg-gradient-accent block bg-clip-text text-4xl font-bold tabular-nums text-transparent"
+        />
+        <span className="text-sm text-slate-500">{periodLabel}</span>
+      </div>
 
-export function VisitorsChart({ days }: { days: DailyVisitors[] }) {
-  const rawMax = Math.max(0, ...days.map((d) => d.visitors))
-  const { maxValue, ticks } = niceAxisScale(rawMax, MIN_AXIS_MAX)
-  const labelStride = Math.max(1, Math.ceil(days.length / 10))
-
-  return (
-    <div className="h-[240px] w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={days} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-          <defs>
-            <linearGradient id="visitorsFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={VISITORS_COLOR} stopOpacity={0.32} />
-              <stop offset="65%" stopColor={VISITORS_COLOR_SOFT} stopOpacity={0.14} />
-              <stop offset="100%" stopColor={VISITORS_COLOR_SOFT} stopOpacity={0.02} />
-            </linearGradient>
-          </defs>
-
-          <CartesianGrid stroke={GRID_COLOR} vertical={false} />
-
-          <XAxis
-            dataKey="label"
-            axisLine={{ stroke: AXIS_LINE_COLOR }}
-            tickLine={false}
-            tick={{ fontSize: 10, fill: MUTED_TEXT }}
-            interval={labelStride - 1}
-            dy={8}
-          />
-          <YAxis
-            domain={[0, maxValue]}
-            ticks={ticks}
-            axisLine={false}
-            tickLine={false}
-            tick={{ fontSize: 10, fill: MUTED_TEXT }}
-            width={32}
-            allowDecimals={false}
-          />
-
-          <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#cbd5e1', strokeDasharray: '3 3' }} />
-
-          <Area
-            type="monotone"
-            dataKey="visitors"
-            stroke={VISITORS_COLOR}
-            strokeWidth={2}
-            fill="url(#visitorsFill)"
-            isAnimationActive
-            animationDuration={900}
-            animationEasing="ease-out"
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+      <div className="mt-6 flex items-end gap-1.5 overflow-x-auto pb-1">
+        {buckets.map((b, i) => {
+          const isLast = i === buckets.length - 1
+          const heightPct = Math.max(4, (b.visitors / maxVisitors) * 100)
+          return (
+            <div key={b.key} className="flex min-w-[28px] flex-1 flex-col items-center gap-2">
+              <div className="flex h-32 w-full items-end">
+                <div
+                  className="w-full rounded-t-md transition-[height] duration-500 ease-out"
+                  style={{
+                    height: `${heightPct}%`,
+                    backgroundColor: isLast ? 'var(--accent)' : BAR_COLOR_MUTED,
+                  }}
+                  title={`${b.label}: ${b.visitors} visitante${b.visitors === 1 ? '' : 's'}`}
+                />
+              </div>
+              <span
+                className="text-[10px] whitespace-nowrap"
+                style={{ color: isLast ? 'var(--accent)' : '#94a3b8', fontWeight: isLast ? 600 : 400 }}
+              >
+                {b.label}
+              </span>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }

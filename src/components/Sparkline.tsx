@@ -4,12 +4,20 @@ import { useId } from 'react'
 import { Area, AreaChart, ResponsiveContainer } from 'recharts'
 
 /** Mini tendencia dentro de una tarjeta de métrica — sin ejes, sin grid. */
-export function Sparkline({ data, color }: { data: number[]; color: string }) {
+export function Sparkline({
+  data,
+  color,
+  height = 'h-10',
+}: {
+  data: number[]
+  color: string
+  height?: string
+}) {
   const gradientId = useId()
   const points = data.map((v, i) => ({ i, v }))
 
   return (
-    <div className="h-10 w-full">
+    <div className={`${height} w-full`}>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={points} margin={{ top: 2, right: 1, bottom: 0, left: 1 }}>
           <defs>

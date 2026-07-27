@@ -1,13 +1,13 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Settings } from 'lucide-react'
+import { ArrowRight, Sparkles } from 'lucide-react'
 import { getCurrentClient, getCurrentUser } from '@/lib/supabase/server'
 import { getClientStoreOptions, getSelectedStore } from '@/lib/stores'
 import { LogoutButton } from '@/components/LogoutButton'
-import { DashboardNav } from '@/components/DashboardNav'
-import { StoreSelector } from '@/components/StoreSelector'
+import { Sidebar } from '@/components/Sidebar'
 import { PageTransition } from '@/components/PageTransition'
 import { SubscriptionBlocked } from '@/components/SubscriptionBlocked'
+import { PLAN_INFO } from '@/lib/plans'
 
 // Depende de la sesión de cada request (cookies) y de datos en vivo — nunca
 // debe prerenderizarse como página estática en build time.
@@ -25,31 +25,53 @@ export default async function DashboardLayout({
 
   const client = await getCurrentClient()
 
-  // Sesión válida pero sin fila en client_users (alta a medias, o el link se
-  // rompió). Deliberadamente NO se redirige a /login aquí: el middleware
-  // rebota /login → /dashboard para cualquier sesión autenticada, así que un
-  // redirect('/login') en este caso sería un bucle infinito. Se muestra un
-  // mensaje en su lugar, con salida a cerrar sesión.
+  // Sesión válida pero sin fila en client_users. Deliberadamente NO se
+  // redirige a /login aquí: el middleware rebota /login → /dashboard para
+  // cualquier sesión autenticada, así que un redirect('/login') en este caso
+  // sería un bucle infinito. Se muestra un mensaje en su lugar.
+  //
+  // Este es el caso NORMAL y esperado para cualquier usuario recién
+  // registrado que confirmó su email pero aún no eligió plan (ver diseño en
+  // RegisterForm.tsx: signUp() nunca crea clients/client_users, eso lo hace
+  // el webhook de Stripe tras el pago) — no una cuenta rota. El copy y el CTA
+  // reflejan eso: empujar a /precios, no a soporte.
   if (!client) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <div className="card w-full max-w-sm space-y-3 p-8 text-center">
-          <h1 className="text-lg font-semibold text-slate-900">Cuenta sin vincular</h1>
-          <p className="text-sm text-slate-500">
-            Tu sesión es válida, pero este usuario no está vinculado a ninguna cuenta de
-            Healzyp Analytics todavía. Contacta con soporte para completar el alta.
-          </p>
+        <div className="card w-full max-w-sm space-y-4 p-8 text-center">
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent-soft">
+            <Sparkles className="h-6 w-6 text-accent" strokeWidth={2} />
+          </span>
+          <div className="space-y-1">
+            <h1 className="text-lg font-semibold text-slate-900">
+              Casi listo — elige tu plan para empezar
+            </h1>
+            <p className="text-sm text-slate-500">
+              Tu cuenta ya está creada. Solo falta elegir un plan para activar tu dashboard.
+            </p>
+          </div>
+          <Link
+            href="/precios"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-95 active:scale-[0.98]"
+          >
+            Ver planes
+            <ArrowRight className="h-4 w-4" strokeWidth={2} />
+          </Link>
           <LogoutButton />
         </div>
       </div>
     )
   }
 
-  // Plan único, sin distinción básico/premium: el acceso a TODO el dashboard
-  // (no solo páginas concretas) depende únicamente de si la suscripción está
-  // al día. 'activa'/'prueba' entran con normalidad; 'cancelada'/
-  // 'pago_fallido' ven un aviso de renovación en vez del dashboard entero —
-  // ni siquiera se piden las tiendas, no hace falta con el dashboard bloqueado.
+  // El acceso a TODO el dashboard depende primero de si la suscripción está
+  // al día, sin importar el plan (clients.plan, ver src/lib/plans.ts):
+  // 'activa'/'prueba' entran con normalidad; 'cancelada'/'pago_fallido' ven
+  // un aviso de renovación en vez del dashboard entero — ni siquiera se
+  // piden las tiendas, no hace falta con el dashboard bloqueado. El plan en
+  // sí SÍ gatea qué páginas se ven además del límite de tiendas —
+  // Contador/Mapa/Financiero son de pago (planHasFullAccess() en
+  // src/lib/plans.ts); ese bloqueo vive en dashboard/page.tsx y en los
+  // layout.tsx de dashboard/finance y dashboard/map, no aquí.
   if (client.estado_suscripcion === 'cancelada' || client.estado_suscripcion === 'pago_fallido') {
     return (
       <div className="min-h-screen bg-background text-slate-900">
@@ -79,43 +101,19 @@ export default async function DashboardLayout({
     getSelectedStore(),
   ])
 
+  const maxStores = PLAN_INFO[client.plan].maxStores
+  const atStoreLimit = maxStores !== null && storeOptions.length >= maxStores
+
   return (
     <div className="min-h-screen bg-background text-slate-900">
-      <header className="px-6 pt-6">
-        <div className="flex items-center justify-between pb-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-accent text-sm font-bold text-white">
-              H
-            </div>
-            <div>
-              <h1 className="text-lg font-semibold text-slate-900">
-                Healzyp Analytics
-              </h1>
-              <p className="text-xs text-slate-400">{client.nombre}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <StoreSelector stores={storeOptions} selectedStoreId={selectedStore?.id ?? null} />
-            <Link
-              href="/dashboard/settings"
-              aria-label="Configuración de la cuenta"
-              className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
-            >
-              <Settings className="h-4 w-4" strokeWidth={2} />
-            </Link>
-            <LogoutButton />
-          </div>
-        </div>
-      </header>
-      {/* Menú flotante: separado del borde superior por el pt-6 del header y
-          por su propio padding, con sombra + borde propios (.card) en vez de
-          una barra plana pegada al borde de la pantalla. */}
-      <div className="px-6 pb-6">
-        <div className="card inline-flex p-1.5">
-          <DashboardNav />
-        </div>
-      </div>
-      <main className="px-6 pb-6">
+      <Sidebar
+        clientName={client.nombre}
+        storeOptions={storeOptions}
+        selectedStoreId={selectedStore?.id ?? null}
+        atStoreLimit={atStoreLimit}
+        plan={client.plan}
+      />
+      <main className="px-6 py-6 lg:pl-[calc(var(--sidebar-width)+1.5rem)]">
         <PageTransition>{children}</PageTransition>
       </main>
     </div>

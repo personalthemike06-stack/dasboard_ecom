@@ -37,3 +37,30 @@ export function buildDailyVisitorSeries(
 
   return days
 }
+
+export type VisitorBucket = { key: string; label: string; visitors: number }
+
+const MAX_DAILY_BARS = 30
+
+/**
+ * Agrupa la serie diaria en "barras" para el gráfico tipo calendario: un día
+ * por barra hasta MAX_DAILY_BARS; a partir de ahí (rango "Personalizado"
+ * amplio) agrupa en semanas de 7 días para no acabar con decenas de barras
+ * demasiado finas para leerse.
+ */
+export function buildVisitorChartBuckets(days: DailyVisitors[]): VisitorBucket[] {
+  if (days.length <= MAX_DAILY_BARS) {
+    return days.map((d) => ({ key: d.day, label: d.label, visitors: d.visitors }))
+  }
+
+  const buckets: VisitorBucket[] = []
+  for (let i = 0; i < days.length; i += 7) {
+    const chunk = days.slice(i, i + 7)
+    const visitors = chunk.reduce((sum, d) => sum + d.visitors, 0)
+    const first = chunk[0]
+    const last = chunk[chunk.length - 1]
+    const label = first.day === last.day ? first.label : `${first.label}–${last.label}`
+    buckets.push({ key: first.day, label, visitors })
+  }
+  return buckets
+}

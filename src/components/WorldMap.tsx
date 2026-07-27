@@ -28,8 +28,7 @@ export type MapPoint = {
 const OCEAN_COLOR = '#f8fafc'
 const LAND_COLOR = '#dbe2ea'
 const LAND_STROKE_COLOR = '#b9c4d0'
-const POINT_COLOR = '#3b82f6'
-const POINT_COLOR_RGB = '59, 130, 246'
+const POINT_COLOR = '#2a78d6'
 
 const MIN_HEIGHT = 320
 const MAX_HEIGHT = 520
@@ -158,7 +157,7 @@ export function WorldMap({ points }: { points: MapPoint[] }) {
           ringsData={points}
           ringLat="lat"
           ringLng="lng"
-          ringColor={() => (t: number) => `rgba(${POINT_COLOR_RGB}, ${(1 - t) * 0.5})`}
+          ringColor={() => (t: number) => `rgba(42, 120, 214, ${(1 - t) * 0.45})`}
           ringMaxRadius={(d) => radiusFor((d as MapPoint).count, maxCount) * 3.2}
           ringPropagationSpeed={2}
           ringRepeatPeriod={1700}

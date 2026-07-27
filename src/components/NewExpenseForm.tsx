@@ -18,7 +18,7 @@ const inputClass =
 
 const today = () => new Date().toISOString().slice(0, 10)
 
-export function NewExpenseForm() {
+export function NewExpenseForm({ storeId }: { storeId: string }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -44,6 +44,7 @@ export function NewExpenseForm() {
     startTransition(async () => {
       const supabase = createClient()
       const { error } = await supabase.from('dashboard_expenses').insert({
+        store_id: storeId,
         fecha,
         importe: amount,
         categoria,
