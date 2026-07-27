@@ -13,10 +13,12 @@ import { motion } from 'motion/react'
 export function Reveal({
   children,
   className,
+  style,
   delay = 0,
 }: {
   children: React.ReactNode
   className?: string
+  style?: React.CSSProperties
   delay?: number
 }) {
   return (
@@ -25,6 +27,7 @@ export function Reveal({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1], delay }}
       className={className}
+      style={style}
     >
       {children}
     </motion.div>

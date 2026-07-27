@@ -1,24 +1,31 @@
-import { Users } from 'lucide-react'
 import { ActiveUsersCounter } from '@/components/ActiveUsersCounter'
 import { PagesNowCard } from '@/components/PagesNowCard'
 import { VisitorsRangeSelector } from '@/components/VisitorsRangeSelector'
 import { VisitorsChart } from '@/components/VisitorsChart'
-import { AnimatedNumber } from '@/components/AnimatedNumber'
 import { Reveal } from '@/components/Reveal'
 import { AutoRefresh } from '@/components/AutoRefresh'
 import { NoStoreConnected } from '@/components/NoStoreConnected'
 import { StoreConnectionError } from '@/components/StoreConnectionError'
+import { UpgradeNotice } from '@/components/UpgradeNotice'
+import { getCurrentClient } from '@/lib/supabase/server'
 import { getSelectedStore } from '@/lib/stores'
 import { getStoreStats } from '@/lib/store-api'
 import { buildDailyVisitorSeries } from '@/lib/visitors'
-import { formatDate } from '@/lib/format'
+import { planHasFullAccess } from '@/lib/plans'
 
 export const dynamic = 'force-dynamic'
 
-const AUTO_REFRESH_MS = 20_000
+const AUTO_REFRESH_MS = 30_000
 
 function toDateStr(d: Date) {
   return d.toISOString().slice(0, 10)
+}
+
+function periodLabel(vrange: string | undefined) {
+  if (vrange === 'today') return 'hoy'
+  if (vrange === '30d') return 'este mes'
+  if (vrange === 'custom') return 'en el periodo seleccionado'
+  return 'esta semana'
 }
 
 function resolveVisitorRange(params: { vrange?: string; vfrom?: string; vto?: string }) {
@@ -49,6 +56,17 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<{ vrange?: string; vfrom?: string; vto?: string }>
 }) {
+  // Contador (esta página) no puede tener su propio layout.tsx — el de
+  // /dashboard ya es el shell compartido por todas las rutas hijas — así que
+  // el gating de plan va inline aquí, en vez de en un layout como en
+  // dashboard/finance y dashboard/map. getCurrentClient está en cache() de
+  // React, así que esta llamada no repite la consulta que ya hizo
+  // dashboard/layout.tsx.
+  const client = await getCurrentClient()
+  if (!client || !planHasFullAccess(client.plan)) {
+    return <UpgradeNotice feature="Contador" />
+  }
+
   const params = await searchParams
   const { from, to } = resolveVisitorRange(params)
 
@@ -57,23 +75,14 @@ export default async function DashboardPage({
     return <NoStoreConnected />
   }
 
-  const todayStr = toDateStr(new Date())
-
-  // "Hoy" se pide aparte del rango del gráfico a propósito: si eliges un
-  // rango personalizado en el pasado, la cifra destacada sigue siendo la de
-  // hoy de verdad, no el último día del rango elegido. activeNow (sesiones
-  // activas + páginas) es independiente del rango pedido en ambas llamadas
-  // — se usa la del rango, cualquiera de las dos sirve igual.
-  const [rangeResult, todayResult] = await Promise.all([
-    getStoreStats(store, { from: toDateStr(from), to: toDateStr(to) }),
-    getStoreStats(store, { from: todayStr, to: todayStr }),
-  ])
+  // activeNow (sesiones activas + páginas) no depende del rango from/to
+  // pedido — siempre son los últimos 5 minutos — así que una sola llamada
+  // sirve tanto para eso como para la serie de visitantes del rango elegido.
+  const rangeResult = await getStoreStats(store, { from: toDateStr(from), to: toDateStr(to) })
 
   if (!rangeResult.ok) return <StoreConnectionError message={rangeResult.error} />
-  if (!todayResult.ok) return <StoreConnectionError message={todayResult.error} />
 
   const days = buildDailyVisitorSeries(rangeResult.data.visitors.byDay, from, to)
-  const visitorsToday = todayResult.data.visitors.total
 
   return (
     <div className="space-y-10">
@@ -108,47 +117,8 @@ export default async function DashboardPage({
           <VisitorsRangeSelector />
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_1fr]">
-          <Reveal delay={0.1} className="card p-5">
-            <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-soft">
-                <Users className="h-4 w-4 text-accent" strokeWidth={2} />
-              </span>
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Visitantes hoy</p>
-            </div>
-            <AnimatedNumber
-              value={visitorsToday}
-              format="integer"
-              className="bg-gradient-accent mt-3 block bg-clip-text text-4xl font-bold tabular-nums text-transparent"
-            />
-          </Reveal>
-
-          <Reveal delay={0.15} className="card p-4">
-            <VisitorsChart days={days} />
-          </Reveal>
-        </div>
-
-        <Reveal delay={0.2} className="card overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 text-left text-xs font-medium uppercase tracking-wide text-slate-400">
-                <th className="px-4 py-2">Día</th>
-                <th className="px-4 py-2">Visitantes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...days].reverse().map((d, i) => (
-                <tr
-                  key={d.day}
-                  className="border-b border-slate-50 last:border-0"
-                  style={{ backgroundColor: i % 2 === 1 ? '#fafafa' : undefined }}
-                >
-                  <td className="px-4 py-2 text-slate-600">{formatDate(d.day)}</td>
-                  <td className="px-4 py-2 font-medium tabular-nums text-slate-900">{d.visitors}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <Reveal delay={0.1} className="card p-6">
+          <VisitorsChart days={days} periodLabel={periodLabel(params.vrange)} />
         </Reveal>
       </div>
     </div>

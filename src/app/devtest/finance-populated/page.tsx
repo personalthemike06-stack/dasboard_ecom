@@ -4,9 +4,9 @@ import { Suspense } from 'react'
 import { Megaphone, Tag, Truck, Wrench } from 'lucide-react'
 import { DevtestShell } from '@/components/DevtestShell'
 import { FinancePeriodSelector } from '@/components/FinancePeriodSelector'
-import { RevenueExpenseChart } from '@/components/RevenueExpenseChart'
 import { FinanceMetricCards } from '@/components/FinanceMetricCards'
-import { NewExpenseForm } from '@/components/NewExpenseForm'
+import { ExpenseDrawerProvider } from '@/components/ExpenseDrawer'
+import { AddExpenseButton } from '@/components/AddExpenseButton'
 import { Reveal } from '@/components/Reveal'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { percentDelta, type PeriodBucket } from '@/lib/finance'
@@ -22,6 +22,12 @@ const CATEGORY_ICONS: Record<string, typeof Megaphone> = {
   herramientas: Wrench,
   envios: Truck,
   otros: Tag,
+}
+const CATEGORY_STYLES: Record<string, { bg: string; text: string }> = {
+  marketing: { bg: '#fce7f3', text: '#db2777' },
+  herramientas: { bg: '#dbeafe', text: '#2563eb' },
+  envios: { bg: '#ccfbf1', text: '#0d9488' },
+  otros: { bg: '#f1f5f9', text: '#64748b' },
 }
 
 const MOCK_BUCKETS: PeriodBucket[] = [
@@ -55,84 +61,71 @@ const ingresosDelta = percentDelta(current.ingresos, previous.ingresos)
 const gastosDelta = percentDelta(current.gastos, previous.gastos)
 const beneficioDelta = percentDelta(beneficioMes, beneficioAnterior)
 
-const ingresosSpark = MOCK_BUCKETS.slice(-8).map((b) => b.ingresos)
-const gastosSpark = MOCK_BUCKETS.slice(-8).map((b) => b.gastos)
+const beneficioSpark = MOCK_BUCKETS.map((b) => b.ingresos - b.gastos)
 
 export default function DevTestFinancePopulatedPage() {
   return (
     <DevtestShell currentPath="/dashboard/finance">
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold tracking-tight text-slate-900">Estado financiero</h2>
-            <p className="text-sm text-slate-500">Ingresos de pedidos pagados menos gastos manuales</p>
-          </div>
-          <Suspense fallback={null}>
-            <FinancePeriodSelector />
-          </Suspense>
-        </div>
-
-        <FinanceMetricCards
-          ingresosMes={current.ingresos}
-          gastosMes={current.gastos}
-          beneficioMes={beneficioMes}
-          ingresosDelta={ingresosDelta}
-          gastosDelta={gastosDelta}
-          beneficioDelta={beneficioDelta}
-          ingresosSpark={ingresosSpark}
-          gastosSpark={gastosSpark}
-        />
-
-        <Reveal delay={0.1} className="card p-4">
-          <RevenueExpenseChart buckets={MOCK_BUCKETS} />
-        </Reveal>
-
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[320px_1fr]">
-          <Reveal delay={0.15} className="card p-4">
-            <h3 className="text-sm font-semibold text-slate-900">Añadir gasto</h3>
-            <div className="mt-3">
-              <NewExpenseForm />
+      <ExpenseDrawerProvider storeId="devtest-store-id">
+        <div className="space-y-8">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900">Estado financiero</h2>
+              <p className="text-sm text-slate-500">Ingresos de pedidos pagados menos gastos manuales</p>
             </div>
-          </Reveal>
+            <div className="flex items-center gap-3">
+              <Suspense fallback={null}>
+                <FinancePeriodSelector />
+              </Suspense>
+              <AddExpenseButton />
+            </div>
+          </div>
 
-          <Reveal delay={0.2} className="card overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 text-left text-xs font-medium uppercase tracking-wide text-slate-400">
-                  <th className="px-4 py-3">Fecha</th>
-                  <th className="px-4 py-3">Categoría</th>
-                  <th className="px-4 py-3">Descripción</th>
-                  <th className="px-4 py-3">Importe</th>
-                </tr>
-              </thead>
-              <tbody>
-                {MOCK_EXPENSES.map((e, i) => {
-                  const CategoryIcon = CATEGORY_ICONS[e.categoria] ?? Tag
-                  return (
-                    <tr
-                      key={e.id}
-                      className="border-b border-slate-50 last:border-0"
-                      style={{ backgroundColor: i % 2 === 1 ? '#fafafa' : undefined }}
+          <FinanceMetricCards
+            ingresosMes={current.ingresos}
+            gastosMes={current.gastos}
+            beneficioMes={beneficioMes}
+            ingresosDelta={ingresosDelta}
+            gastosDelta={gastosDelta}
+            beneficioDelta={beneficioDelta}
+            beneficioSpark={beneficioSpark}
+          />
+
+          <Reveal delay={0.15} className="card overflow-hidden">
+            <div className="border-b border-slate-100 px-5 py-4">
+              <h3 className="text-sm font-semibold text-slate-900">Gastos recientes</h3>
+            </div>
+            <ul className="divide-y divide-slate-50 px-5">
+              {MOCK_EXPENSES.map((e) => {
+                const CategoryIcon = CATEGORY_ICONS[e.categoria] ?? Tag
+                const style = CATEGORY_STYLES[e.categoria] ?? CATEGORY_STYLES.otros
+                const label = CATEGORY_LABELS[e.categoria] ?? e.categoria
+                return (
+                  <li key={e.id} className="flex items-center gap-3 py-3">
+                    <span
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                      style={{ backgroundColor: style.bg }}
                     >
-                      <td className="px-4 py-3 text-slate-600">{formatDate(e.fecha)}</td>
-                      <td className="px-4 py-3 text-slate-600">
-                        <span className="inline-flex items-center gap-1.5">
-                          <CategoryIcon className="h-3.5 w-3.5 text-slate-400" strokeWidth={2} />
-                          {CATEGORY_LABELS[e.categoria]}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-slate-500">{e.descripcion}</td>
-                      <td className="px-4 py-3 font-medium tabular-nums text-slate-900">
-                        {formatCurrency(e.importe)}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                      <CategoryIcon className="h-4 w-4" style={{ color: style.text }} strokeWidth={2} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-slate-900">
+                        {e.descripcion || label}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {formatDate(e.fecha)} · {label}
+                      </p>
+                    </div>
+                    <p className="shrink-0 text-sm font-semibold tabular-nums text-slate-900">
+                      {formatCurrency(e.importe)}
+                    </p>
+                  </li>
+                )
+              })}
+            </ul>
           </Reveal>
         </div>
-      </div>
+      </ExpenseDrawerProvider>
     </DevtestShell>
   )
 }

@@ -2,13 +2,14 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { STATUS_COLORS } from '@/lib/status-colors'
 
 /**
- * Único mutation del dashboard. products_update_admin en supabase/schema.sql
- * de la tienda ya da UPDATE completo a cualquier JWT admin (sin restricción
- * de columna) — no hace falta ningún GRANT adicional para este toggle.
+ * Único mutation de Productos. Pasa por /api/products/[id] (proxy
+ * server-side hacia PATCH /api/dashboard/products/[id] de la tienda) en vez
+ * de escribir directo a Supabase — el navegador del dashboard SaaS ya no
+ * tiene acceso a la Supabase de ninguna tienda, ver el comentario en
+ * src/lib/store-api.ts sobre por qué el api_token nunca cruza al cliente.
  */
 export function ProductActiveToggle({ id, activo }: { id: string; activo: boolean }) {
   const router = useRouter()
@@ -18,14 +19,15 @@ export function ProductActiveToggle({ id, activo }: { id: string; activo: boolea
   function toggle() {
     setErrorMsg(null)
     startTransition(async () => {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from('products')
-        .update({ activo: !activo })
-        .eq('id', id)
+      const res = await fetch(`/api/products/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activo: !activo }),
+      })
 
-      if (error) {
-        setErrorMsg(error.message)
+      if (!res.ok) {
+        const body = await res.json().catch(() => null)
+        setErrorMsg(body?.error ?? 'No se pudo actualizar el producto.')
         return
       }
       router.refresh()

@@ -1,4 +1,4 @@
-import { Activity } from 'lucide-react'
+import { Monitor, Smartphone } from 'lucide-react'
 import { AnimatedNumber } from '@/components/AnimatedNumber'
 
 type DeviceCount = { device: string; count: number }
@@ -6,7 +6,7 @@ type DeviceCount = { device: string; count: number }
 /**
  * Ya no es 'use client' ni usa useActiveSessions(): los datos vienen del
  * Server Component padre (GET /api/dashboard/stats de la tienda
- * seleccionada, vía AutoRefresh + router.refresh() cada 20s en vez de
+ * seleccionada, vía AutoRefresh + router.refresh() cada 30s en vez de
  * Realtime — ver src/components/AutoRefresh.tsx).
  *
  * byDevice es opcional (no solo por tipo): getStoreStats() en
@@ -30,27 +30,41 @@ export function ActiveUsersCounter({
   const desktop = byDevice.find((d) => d.device === 'desktop')?.count ?? 0
 
   return (
-    <div className="card max-w-md p-8">
-      <div className="flex items-center gap-2">
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-soft">
-          <Activity className="h-4 w-4 text-accent" strokeWidth={2} />
+    <div className="rounded-[18px] p-8" style={{ backgroundColor: 'var(--accent)' }}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span
+          className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white"
+          style={{ backgroundColor: 'rgba(255,255,255,0.18)' }}
+        >
+          Activos ahora
         </span>
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-          Usuarios activos ahora
-        </p>
+        <span
+          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-white"
+          style={{ backgroundColor: 'rgba(255,255,255,0.18)' }}
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-white" aria-hidden />
+          En vivo
+        </span>
       </div>
 
       <AnimatedNumber
         value={sessions}
         format="integer"
-        className="bg-gradient-accent mt-4 block bg-clip-text text-6xl font-bold tracking-tight text-transparent"
+        className="mt-6 block text-center text-[52px] leading-none font-bold tracking-tight text-white"
       />
 
-      <p className="mt-3 text-sm text-slate-500">
-        {mobile} móvil · {desktop} escritorio
-      </p>
+      <div className="mt-6 flex items-center justify-center gap-6 text-sm text-white/85">
+        <span className="flex items-center gap-1.5">
+          <Smartphone className="h-4 w-4" strokeWidth={2} />
+          {mobile} móvil
+        </span>
+        <span className="flex items-center gap-1.5">
+          <Monitor className="h-4 w-4" strokeWidth={2} />
+          {desktop} escritorio
+        </span>
+      </div>
 
-      <p className="mt-1 text-xs text-slate-400">
+      <p className="mt-3 text-center text-xs text-white/60">
         Actualizado {new Date(generatedAt).toLocaleTimeString('es-ES')}
       </p>
     </div>

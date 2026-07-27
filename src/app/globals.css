@@ -24,6 +24,10 @@
   --accent-soft: #eaf2fe;
   --accent-mint: #34d399;
   --gradient-accent: linear-gradient(135deg, var(--accent) 0%, var(--accent-mint) 100%);
+  /* Fondo del sidebar fijo — un tono más marcado que --background para que
+   * se distinga del área de contenido sin recurrir a un borde grueso. */
+  --surface-1: #eef1f7;
+  --sidebar-width: 216px;
 }
 
 @theme inline {
@@ -32,6 +36,7 @@
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
   --color-accent-mint: var(--accent-mint);
+  --color-surface-1: var(--surface-1);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

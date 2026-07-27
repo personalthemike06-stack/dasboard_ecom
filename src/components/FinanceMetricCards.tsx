@@ -5,7 +5,6 @@ import { Receipt, TrendingUp, Wallet } from 'lucide-react'
 import { AnimatedNumber } from '@/components/AnimatedNumber'
 import { Sparkline } from '@/components/Sparkline'
 import { DeltaBadge } from '@/components/DeltaBadge'
-import { STATUS_COLORS } from '@/lib/status-colors'
 import { staggerContainer, fadeInUp } from '@/lib/motion-variants'
 import type { Delta } from '@/lib/finance'
 
@@ -16,8 +15,7 @@ export function FinanceMetricCards({
   ingresosDelta,
   gastosDelta,
   beneficioDelta,
-  ingresosSpark,
-  gastosSpark,
+  beneficioSpark,
 }: {
   ingresosMes: number
   gastosMes: number
@@ -25,94 +23,98 @@ export function FinanceMetricCards({
   ingresosDelta: Delta | null
   gastosDelta: Delta | null
   beneficioDelta: Delta | null
-  ingresosSpark: number[]
-  gastosSpark: number[]
+  beneficioSpark: number[]
 }) {
   const beneficioGood = beneficioMes >= 0
+  // Degradado sólido diagonal en vez del pastel plano anterior — verde/
+  // turquesa si hay beneficio, rojo/naranja (mismos tonos que
+  // STATUS_COLORS.critical/serious, ya usados en el resto del dashboard)
+  // si no lo hay. La condición beneficioGood no cambia, solo qué estilo se
+  // le aplica a cada rama.
+  const beneficioGradient = beneficioGood
+    ? 'linear-gradient(135deg, #22a06b 0%, #38a3a0 100%)'
+    : 'linear-gradient(135deg, #d03b3b 0%, #ec835a 100%)'
 
   return (
     <motion.div
       variants={staggerContainer}
       initial="hidden"
       animate="visible"
-      className="grid grid-cols-1 gap-4 sm:grid-cols-3"
+      className="grid grid-cols-1 gap-4 lg:grid-cols-3"
     >
-      <motion.div variants={fadeInUp} className="card p-5">
-        <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-soft">
-            <TrendingUp className="h-4 w-4 text-accent" strokeWidth={2} />
-          </span>
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Ingresos</p>
-        </div>
-        <AnimatedNumber
-          value={ingresosMes}
-          format="currency"
-          className="bg-gradient-accent mt-3 block bg-clip-text text-3xl font-bold tabular-nums text-transparent"
-        />
-        <div className="mt-2">
-          <DeltaBadge delta={ingresosDelta} upIsGood />
-        </div>
-        <div className="mt-3 -mb-1">
-          <Sparkline data={ingresosSpark} color="#3b82f6" />
-        </div>
-      </motion.div>
-
-      <motion.div variants={fadeInUp} className="card p-5">
-        <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100">
-            <Receipt className="h-4 w-4 text-slate-500" strokeWidth={2} />
-          </span>
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Gastos</p>
-        </div>
-        <AnimatedNumber
-          value={gastosMes}
-          format="currency"
-          className="mt-3 block text-3xl font-bold tabular-nums text-slate-900"
-        />
-        <div className="mt-2">
-          <DeltaBadge delta={gastosDelta} upIsGood={false} />
-        </div>
-        <div className="mt-3 -mb-1">
-          <Sparkline data={gastosSpark} color="#eb6834" />
-        </div>
-      </motion.div>
-
-      {/* La tarjeta "hero" del trío: fondo propio (no blanco puro) + badge
-          más grande, para que se lea de un vistazo como la métrica que de
-          verdad importa, no solo una tercera cifra más. */}
+      {/* Hero: beneficio del mes, con la tendencia embebida (área con
+          degradado, sin eje — ver Sparkline) en vez de un número suelto. */}
       <motion.div
         variants={fadeInUp}
-        className="card p-5"
-        style={{
-          backgroundColor: beneficioGood ? '#f2faf2' : '#fdf3f3',
-          border: `1px solid ${beneficioGood ? '#cdeccd' : '#f4cccc'}`,
-        }}
+        className="relative flex flex-col overflow-hidden rounded-2xl p-6 text-white lg:col-span-2"
+        style={{ backgroundImage: beneficioGradient }}
       >
-        <div className="flex items-center gap-2.5">
-          <span
-            className="flex h-10 w-10 items-center justify-center rounded-full"
-            style={{ backgroundColor: beneficioGood ? '#d7f0d7' : '#f8d7d7' }}
-          >
-            <Wallet
-              className="h-5 w-5"
-              style={{ color: beneficioGood ? STATUS_COLORS.good : STATUS_COLORS.critical }}
-              strokeWidth={2.25}
-            />
+        {/* Decoración circular sutil — parcialmente fuera del borde, por
+            eso el card necesita overflow-hidden: la parte que sobra se
+            recorta ahí en vez de desbordar el layout. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -top-10 -right-10 h-48 w-48 rounded-full bg-white/[0.08]"
+        />
+
+        <div className="relative flex items-center gap-2.5">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
+            <Wallet className="h-5 w-5 text-white" strokeWidth={2.25} />
           </span>
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+          <p className="text-xs font-semibold uppercase tracking-wide text-white/85">
             Beneficio · mes actual
           </p>
         </div>
-        <AnimatedNumber
-          value={beneficioMes}
-          format="currency"
-          className="mt-3 block text-5xl font-extrabold tabular-nums"
-          style={{ color: beneficioGood ? STATUS_COLORS.good : STATUS_COLORS.critical }}
-        />
-        <div className="mt-2">
-          <DeltaBadge delta={beneficioDelta} upIsGood />
+
+        <div className="relative mt-3 flex flex-wrap items-end gap-3">
+          <AnimatedNumber
+            value={beneficioMes}
+            format="currency"
+            className="block text-5xl font-extrabold text-white tabular-nums"
+          />
+          <div className="pb-1.5">
+            <DeltaBadge delta={beneficioDelta} upIsGood />
+          </div>
+        </div>
+
+        <div className="relative mt-5 flex-1">
+          <Sparkline data={beneficioSpark} color="#ffffff" height="h-24" />
         </div>
       </motion.div>
+
+      {/* Ingresos y gastos, apilados a la derecha del hero — cada uno
+          compacto: icono + label/número en una sola fila, no dos. */}
+      <div className="grid grid-cols-1 gap-4">
+        <motion.div variants={fadeInUp} className="card flex items-center gap-3 p-4">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-soft">
+            <TrendingUp className="h-4 w-4 text-accent" strokeWidth={2} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Ingresos</p>
+            <AnimatedNumber
+              value={ingresosMes}
+              format="currency"
+              className="block text-lg font-bold tabular-nums text-slate-900"
+            />
+          </div>
+          <DeltaBadge delta={ingresosDelta} upIsGood />
+        </motion.div>
+
+        <motion.div variants={fadeInUp} className="card flex items-center gap-3 p-4">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100">
+            <Receipt className="h-4 w-4 text-slate-500" strokeWidth={2} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Gastos</p>
+            <AnimatedNumber
+              value={gastosMes}
+              format="currency"
+              className="block text-lg font-bold tabular-nums text-slate-900"
+            />
+          </div>
+          <DeltaBadge delta={gastosDelta} upIsGood={false} />
+        </motion.div>
+      </div>
     </motion.div>
   )
 }
