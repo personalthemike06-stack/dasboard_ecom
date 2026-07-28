@@ -6,11 +6,13 @@ import { LogoutButton } from '@/components/LogoutButton'
 import { StatusBadge } from '@/components/StatusBadge'
 import { ChangePasswordForm } from '@/components/ChangePasswordForm'
 import { RotateStoreTokenButton } from '@/components/RotateStoreTokenButton'
+import { CancelSubscriptionButton } from '@/components/CancelSubscriptionButton'
 import { SupportLink } from '@/components/SupportLink'
 import { Reveal } from '@/components/Reveal'
 import { subscriptionStatusInfo } from '@/lib/status-colors'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { PLAN_INFO } from '@/lib/plans'
+import { getSubscriptionSummary } from '@/lib/subscription'
 
 // Depende de la sesión (cookies) — nunca prerenderizar como página estática.
 export const dynamic = 'force-dynamic'
@@ -25,6 +27,15 @@ export default async function SettingsPage() {
   const stores = await getClientStoreSummaries()
   const status = subscriptionStatusInfo(client.estado_suscripcion)
   const planInfo = PLAN_INFO[client.plan]
+
+  // Estado de facturación leído en vivo de Stripe: clients.estado_suscripcion
+  // no basta aquí, porque una suscripción ya cancelada a fin de periodo sigue
+  // siendo 'activa' hasta que vence (ver src/lib/subscription.ts).
+  const subscription = await getSubscriptionSummary()
+  const periodEndLabel = subscription?.currentPeriodEnd
+    ? formatDate(subscription.currentPeriodEnd)
+    : null
+  const cancelScheduled = subscription?.cancelAtPeriodEnd ?? false
 
   return (
     <div className="max-w-2xl space-y-8">
@@ -89,12 +100,28 @@ export default async function SettingsPage() {
               <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" strokeWidth={2} />
               <div>
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                  Próxima renovación
+                  {cancelScheduled ? 'Acceso hasta' : 'Próxima renovación'}
                 </p>
-                <p className="mt-1 text-sm text-slate-500">Pendiente de activar pagos</p>
+                <p className={`mt-1 text-sm ${periodEndLabel ? 'text-slate-900' : 'text-slate-500'}`}>
+                  {periodEndLabel ?? 'No disponible'}
+                </p>
               </div>
             </div>
           </div>
+
+          {cancelScheduled ? (
+            <p className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+              Tu suscripción está cancelada y no se renovará
+              {periodEndLabel ? ` el ${periodEndLabel}` : ''}. Mantienes el acceso completo hasta
+              esa fecha —{' '}
+              <Link href="/precios" className="font-medium underline">
+                vuelve a suscribirte
+              </Link>{' '}
+              cuando quieras.
+            </p>
+          ) : (
+            subscription && <CancelSubscriptionButton periodEndLabel={periodEndLabel} />
+          )}
         </Reveal>
       </section>
 
