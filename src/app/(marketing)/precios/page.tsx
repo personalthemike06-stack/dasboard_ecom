@@ -16,6 +16,7 @@ export const metadata: Metadata = {
 const TIERS: PricingTier[] = [
   {
     name: PLAN_INFO.basico.label,
+    plan: 'basico',
     priceValue: PLAN_INFO.basico.priceValue,
     storesLabel: planStoresLabel('basico'),
     features: [
@@ -26,6 +27,7 @@ const TIERS: PricingTier[] = [
   },
   {
     name: PLAN_INFO.premium.label,
+    plan: 'premium',
     priceValue: PLAN_INFO.premium.priceValue,
     storesLabel: planStoresLabel('premium'),
     features: [
@@ -38,6 +40,7 @@ const TIERS: PricingTier[] = [
   },
   {
     name: PLAN_INFO.ultra.label,
+    plan: 'ultra',
     priceValue: PLAN_INFO.ultra.priceValue,
     storesLabel: planStoresLabel('ultra'),
     features: [

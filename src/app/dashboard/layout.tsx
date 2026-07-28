@@ -1,12 +1,11 @@
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { ArrowRight, Sparkles } from 'lucide-react'
 import { getCurrentClient, getCurrentUser } from '@/lib/supabase/server'
 import { getClientStoreOptions, getSelectedStore } from '@/lib/stores'
 import { LogoutButton } from '@/components/LogoutButton'
 import { Sidebar } from '@/components/Sidebar'
 import { PageTransition } from '@/components/PageTransition'
 import { SubscriptionBlocked } from '@/components/SubscriptionBlocked'
+import { AwaitingSubscription } from '@/components/AwaitingSubscription'
 import { PLAN_INFO } from '@/lib/plans'
 
 // Depende de la sesión de cada request (cookies) y de datos en vivo — nunca
@@ -36,31 +35,7 @@ export default async function DashboardLayout({
   // el webhook de Stripe tras el pago) — no una cuenta rota. El copy y el CTA
   // reflejan eso: empujar a /precios, no a soporte.
   if (!client) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <div className="card w-full max-w-sm space-y-4 p-8 text-center">
-          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent-soft">
-            <Sparkles className="h-6 w-6 text-accent" strokeWidth={2} />
-          </span>
-          <div className="space-y-1">
-            <h1 className="text-lg font-semibold text-slate-900">
-              Casi listo — elige tu plan para empezar
-            </h1>
-            <p className="text-sm text-slate-500">
-              Tu cuenta ya está creada. Solo falta elegir un plan para activar tu dashboard.
-            </p>
-          </div>
-          <Link
-            href="/precios"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-95 active:scale-[0.98]"
-          >
-            Ver planes
-            <ArrowRight className="h-4 w-4" strokeWidth={2} />
-          </Link>
-          <LogoutButton />
-        </div>
-      </div>
-    )
+    return <AwaitingSubscription />
   }
 
   // El acceso a TODO el dashboard depende primero de si la suscripción está

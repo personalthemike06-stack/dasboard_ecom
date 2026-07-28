@@ -5,9 +5,11 @@ import { motion } from 'motion/react'
 import { Check } from 'lucide-react'
 import { CountUpOnView } from '@/components/marketing/CountUpOnView'
 import { easeOut } from '@/lib/motion-variants'
+import type { ClientPlan } from '@/lib/plans'
 
 export type PricingTier = {
   name: string
+  plan: ClientPlan
   priceValue: number
   storesLabel: string
   features: string[]
@@ -32,10 +34,10 @@ function CheckItem({ text, highlighted }: { text: string; highlighted?: boolean 
 }
 
 /**
- * Botón "Suscribirse" enlaza a /contacto, no a un checkout — Stripe todavía
- * no está conectado (pendiente de diseño aprobado, ver conversación). Es un
- * placeholder honesto ("habla con nosotros mientras tanto") en vez de un
- * enlace muerto o un falso estado de "comprado".
+ * Botón "Suscribirse" navega a /precios/[plan]/pagar — esa página hace de
+ * guarda de autenticación server-side (redirige a /registro sin sesión) y
+ * monta el Payment Element embebido; aquí no hace falta fetch ni estado de
+ * carga, es solo una navegación.
  *
  * Estructura de 3 capas para que las animaciones no se pisen entre sí:
  * ScrollReveal (fuera, en precios/page.tsx) anima la entrada por scroll y
@@ -48,6 +50,7 @@ function CheckItem({ text, highlighted }: { text: string; highlighted?: boolean 
  */
 export function PricingCard({
   name,
+  plan,
   priceValue,
   storesLabel,
   features,
@@ -96,7 +99,7 @@ export function PricingCard({
         </ul>
 
         <Link
-          href="/contacto"
+          href={`/precios/${plan}/pagar`}
           className={`mt-8 block rounded-full px-5 py-3 text-center text-sm font-semibold transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] ${
             highlighted
               ? 'bg-white text-accent hover:brightness-95'
